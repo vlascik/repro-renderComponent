@@ -1,5 +1,5 @@
 {
-  "startCommand": "npm start",
+  "startCommand": "pnpm start",
   "env": {
     "NODE_OPTIONS": "--trace-warnings --unhandled-rejections=strict"
   }

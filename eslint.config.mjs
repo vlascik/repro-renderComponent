@@ -12,32 +12,49 @@
  *     npx eslint --inspect-config
  *
  */
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import globals from 'globals';
 import js from '@eslint/js';
 
+import ts from 'typescript-eslint';
+
 import ember from 'eslint-plugin-ember/recommended';
+
 import eslintConfigPrettier from 'eslint-config-prettier';
 import qunit from 'eslint-plugin-qunit';
 import n from 'eslint-plugin-n';
 
 import babelParser from '@babel/eslint-parser';
 
-const esmParserOptions = {
-  ecmaFeatures: { modules: true },
-  ecmaVersion: 'latest',
-  requireConfigFile: false,
-  babelOptions: {
-    plugins: [
-      ['@babel/plugin-proposal-decorators', { decoratorsBeforeExport: true }],
-    ],
+const parserOptions = {
+  esm: {
+    js: {
+      ecmaFeatures: { modules: true },
+      ecmaVersion: 'latest',
+      requireConfigFile: false,
+      babelOptions: {
+        plugins: [
+          [
+            '@babel/plugin-proposal-decorators',
+            { decoratorsBeforeExport: true },
+          ],
+        ],
+      },
+    },
+    ts: {
+      projectService: true,
+      tsconfigRootDir: dirname(fileURLToPath(import.meta.url)),
+    },
   },
 };
 
-export default [
+export default ts.config(
   js.configs.recommended,
-  eslintConfigPrettier,
   ember.configs.base,
   ember.configs.gjs,
+  ember.configs.gts,
+  eslintConfigPrettier,
   /**
    * Ignores must be in their own object
    * https://eslint.org/docs/latest/use/configure/ignore
@@ -62,14 +79,23 @@ export default [
   {
     files: ['**/*.{js,gjs}'],
     languageOptions: {
-      parserOptions: esmParserOptions,
+      parserOptions: parserOptions.esm.js,
       globals: {
         ...globals.browser,
       },
     },
   },
   {
-    files: ['tests/**/*-test.{js,gjs}'],
+    files: ['**/*.{ts,gts}'],
+    languageOptions: {
+      parser: ember.parser,
+      parserOptions: parserOptions.esm.ts,
+    },
+    extends: [...ts.configs.recommendedTypeChecked, ember.configs.gts],
+  },
+  {
+    ...qunit.configs.recommended,
+    files: ['tests/**/*-test.{js,gjs,ts,gts}'],
     plugins: {
       qunit,
     },
@@ -78,6 +104,7 @@ export default [
    * CJS node files
    */
   {
+    ...n.configs['flat/recommended-script'],
     files: [
       '**/*.cjs',
       'config/**/*.js',
@@ -106,6 +133,7 @@ export default [
    * ESM node files
    */
   {
+    ...n.configs['flat/recommended-module'],
     files: ['**/*.mjs'],
     plugins: {
       n,
@@ -114,10 +142,10 @@ export default [
     languageOptions: {
       sourceType: 'module',
       ecmaVersion: 'latest',
-      parserOptions: esmParserOptions,
+      parserOptions: parserOptions.esm.js,
       globals: {
         ...globals.node,
       },
     },
   },
-];
+);
