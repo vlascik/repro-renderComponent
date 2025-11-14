@@ -7,7 +7,7 @@ import { renderComponent } from '@ember/renderer';
 
 const LeButton = class extends Component {
   <template>
-    <BsButton>BsButton: renderPanel</BsButton>
+    <BsButton>BsButton: on click renderPanel</BsButton>
   </template>
 }
 
@@ -27,28 +27,30 @@ const LePanel = <template>
 function renderButton(parent) {
   const el = document.getElementById('button');
   const app = getOwner(parent);
-  console.log('!! rB', el, parent, app);
-
-  const owner = {
-    lookup(specifier) {
-      return app.lookup(specifier);
-    }
-  }
+  console.log('!! renderButton', el, parent, app);
 
   try {
+    let parentOwner = getOwner(parent);
+    let mockOwner = {
+       lookup: parentOwner.lookup.bind(parentOwner),
+       // lookup(specifier) { return app.lookup(specifier); }
+    }
+
     let result = renderComponent(LeButton, {
       into: el,
       owner: getOwner(parent),
+      // owner: mockOwner
     });
+    return result;
   } catch (e) {
-    console.log("!!E", e);
+    console.log("!! renderButton Error", e);
   }
 }
 
 
 function renderPanel(parent) {
   const el = document.getElementById('panel');
-  console.log('!! rP', el);
+  console.log('!! renderPanel', el, parent);
 
   try {
     return renderComponent(LePanel, {
@@ -56,7 +58,7 @@ function renderPanel(parent) {
       owner: getOwner(parent),
     });
   } catch (e) {
-    console.log("!!EP", e);
+    console.log("!! renderPanel Error", e);
   }
 }
 
@@ -69,8 +71,10 @@ export default class Repro extends Component {
     <h2>component invocation via renderComponent:</h2>
     <div id="button"></div>
     <div id="panel"></div>
-    {{(renderButton this)}}
-    {{(renderPanel this)}}
+    {{!(renderButton this)}}
+    {{!(renderButton this)}}
+    {{!(renderPanel this)}}
+    {{!(renderPanel this)}}
 
     <div id="ember-bootstrap-wormhole"></div>
   </template>
